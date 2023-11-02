@@ -1,4 +1,4 @@
-#!/usr/bin/env zx --install
+#!/usr/bin/env -S zx --install
 // Docs: https://google.github.io/zx/api
 
 // fritzconnection (python) can't connect from the internet: https://github.com/kbr/fritzconnection/issues/178
