@@ -11,14 +11,14 @@ const help = () => {
   console.log(`Usage: ./devices.mjs [OPTION]...
 
 Login data can be given as arguments (not recommended),
-read from environment variables HOST, USER and PASS,
+read from environment variables FBHOST, FBUSER and FBPASS,
 or, if nothing is set, it will prompt you.
 
 Options:
   --loop=SEC    Run in a loop with SEC seconds of sleep each iteration.
-  --host=HOST   FritzBox hostname including port, e.g., foobarbaz.myfritz.net:46390.
-  --user=USER   FritzBox username.
-  --pass=PASS   FritzBox password.
+  --host=FBHOST   FritzBox hostname including port, e.g., foobarbaz.myfritz.net:46390.
+  --user=FBUSER   FritzBox username.
+  --pass=FBPASS   FritzBox password.
   --verbose     Verbose mode (shows each command and its output; off by default).
   --help        Show this usage information.
 `);
@@ -58,9 +58,9 @@ const ask = (query, hidden = false) => {
 }
 
 const sec = parseInt(argv.loop)
-const host = argv.host || process.env.HOST || await question('Hostname including port: ') || process.exit(1)
-const user = argv.user || process.env.USER || await question('Username: ') || process.exit(1)
-const pass = argv.pass || process.env.PASS || await ask('Password: ', true) || process.exit(1)
+const host = argv.host || process.env.FBHOST || await question('Hostname including port: ') || process.exit(1)
+const user = argv.user || process.env.FBUSER || await question('Username: ') || process.exit(1)
+const pass = argv.pass || process.env.FBPASS || await ask('Password: ', true) || process.exit(1)
 
 // await spinner('working...', () => $`sleep 2`)
 
