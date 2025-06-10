@@ -7,10 +7,10 @@ import { log } from 'node:console';
 import { fs, $, chalk, question } from 'zx';
 // Run with `zx --install devices.mjs` to install dependencies (included in #! above)
 import 'dotenv/config' // loads environment variables from .env
-// console.log(process.env)
+// log(process.env)
 
 const help = () => {
-  console.log(`Usage: ./devices.mjs [OPTIONS] [COMMANDS]...
+  log(`Usage: ./devices.mjs [OPTIONS] [COMMANDS]...
 
 Login data can be given as arguments (not recommended),
 read from environment variables FBHOST, FBUSER and FBPASS,
@@ -71,7 +71,7 @@ const host = argv.host || process.env.FBHOST || await question('Hostname includi
 const user = argv.user || process.env.FBUSER || await question('Username: ') || process.exit(1)
 const pass = argv.pass || process.env.FBPASS || await ask('Password: ', true) || process.exit(1)
 
-console.log(new Date().toLocaleString('de'));
+log(new Date().toLocaleString('de'));
 
 const headers = {
   "accept": "*/*",
@@ -93,23 +93,23 @@ const getData = (host) => async (page, json = true) => {
   // check if sid still valid and login+challenge if not
   // http://www.apfel-z.net/artikel/Fritz_Box_API_via_curl_wget/
   if (!sid) {
-    // console.log('> Login <')
+    // log('> Login <')
     // console.time('login');
     const sid_get = await (await fetch(`https://${host}/login_sid.lua`, { headers, "method": "GET" })).text();
-    // console.log(sid_get);
+    // log(sid_get);
     const xml_sid = t => t.match(/<SID>(.*)<\/SID>/)[1];
     const xml_cha = t => t.match(/<Challenge>(.*)<\/Challenge>/)[1];
     if (xml_sid(sid_get) == '0000000000000000') {
       const challenge = xml_cha(sid_get);
       // console.error('Not logged in anymore! Challenge:', challenge);
       const response = (await $`echo -n "${challenge}-${pass}" | iconv --from-code=UTF-8 --to-code=UTF-16LE | md5sum | sed  -e 's/ .*//'`).toString().trim();
-      // console.log('Response:', response);
+      // log('Response:', response);
       const r = await (await fetch(`https://${host}/login_sid.lua`, { headers, "method": "POST",
         "body": `response=${challenge}-${response}&username=${user}`,
       })).text();
-      // console.log(r);
+      // log(r);
       sid = xml_sid(r);
-      // console.log('New SID:', sid);
+      // log('New SID:', sid);
     }
     // console.timeEnd('login');
   }
@@ -136,11 +136,11 @@ const fb = getData(host);
 // mutating commands (can not run with --loop)
 if (argv.add_mac) {
   const mac = argv.add_mac;
-  console.log('Adding device with MAC', mac);
+  log('Adding device with MAC', mac);
   const formData = mac.split(':').map((i,v) => `mac${i}=${v}`).join('&') + `&mac=${encodeURIComponent(mac)}`;
   const res = fb(`wKey&${formData}`).data;
   if (res?.add_mac == 'ok') {
-    console.log('Success!');
+    log('Success!');
     process.exit(0);
   } else {
     console.error('Failed!');
@@ -150,26 +150,26 @@ if (argv.add_mac) {
 
 // non-mutating commands
 const overview = async () => {
-  console.log('> Overview <')
-  const r = await fb('overview');
-  // console.log(r);
-  console.log(r.data.net.devices.map(x => `${x.name} (${x.desc})`)); // 3s
+  log('> Overview <')
+  const r = await fb('overview'); // 3s
+  const devices = r.data.net.devices.map(x => `${x.name} (${x.desc})`);
+  log({devices});
   // data.dsl.{down,up}
 };
 
 const devices = async () => {
-  console.log('> Devices <')
-  console.log((await fb('netDev')).data.active.map(x => x.name)); // 5s
+  log('> Devices <')
+  log((await fb('netDev')).data.active.map(x => x.name)); // 5s
   // icons: green = connected, globe = connected and using internet sending/receiving data; https://www.gutefrage.net/frage/was-bedeuten-fritzbox-icons
   // echo "$(echo 'name,mac,ipv4.ip,port'; cat netDev.json | jq -r '.data | ([.active, .passive] | add)[] | [.name, .mac, .ipv4.ip, .port] | @csv')" | xsv table
 };
 
 const counter = async () => {
-  console.log('> Online-Zähler <')
+  log('> Online-Zähler <')
   const netCnt = await fb('netCnt', false); // 0.5s
   const netCntData = netCnt.split('\n').find(x => x.startsWith('const data = ')).replace('const data = ', '').replace(';', '');
   const r = JSON.parse(netCntData);
-  // console.log(r);
+  // log(r);
   const calc = period => {
     const mb = (high, low) => {
       high = parseInt(high || "0", 10);
@@ -182,14 +182,14 @@ const counter = async () => {
     const total = outgoing + incoming; 
     return {total, outgoing, incoming};
   }
-  console.log('Today', calc(r.Today));
-  // console.log('Yesterday', calc(r.Yesterday));
+  log('Today', calc(r.Today));
+  // log('Yesterday', calc(r.Yesterday));
 };
 
 const cmd = async f => {
   if (argv[f.name]) {
     await f();
-    console.log();
+    log();
   }
 };
 
@@ -203,4 +203,4 @@ while(true) {
     break;
 }
 
-console.log('Done');
+log('Done');
