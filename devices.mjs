@@ -150,22 +150,35 @@ if (argv.add_mac) {
 
 // non-mutating commands
 const overview = async () => {
-  log('> Overview <')
   const r = await fb('overview'); // 3s
-  const devices = r.data.net.devices.map(x => `${x.name} (${x.desc})`);
-  log({devices});
-  // data.dsl.{down,up}
+  const d = r.data;
+  // just includes name, state and connection, not IP or MAC
+  const devices = d.net.devices.map(x => `${x.name} (${x.desc})`);
+  const con = d.internet.connections.find(x => x.active);
+  log({
+    fritzbox: d.fritzos.Productname,
+    fritzos: d.fritzos.nspver,
+    lan: d.lan.txt,
+    callsToday: d.foncalls.callsToday,
+    dect: d.dect.txt,
+    active_devices: d.net.active_count,
+    isp: con.provider_id,
+    ipv4: con.ipv4.ip,
+    ipv6: con.ipv6.ip,
+    downstream: con.downstream,
+    upstream: con.upstream,
+    uplink: con.ethernet_port_name,
+    devices,
+  });
 };
 
 const devices = async () => {
-  log('> Devices <')
   log((await fb('netDev')).data.active.map(x => x.name)); // 5s
   // icons: green = connected, globe = connected and using internet sending/receiving data; https://www.gutefrage.net/frage/was-bedeuten-fritzbox-icons
   // echo "$(echo 'name,mac,ipv4.ip,port'; cat netDev.json | jq -r '.data | ([.active, .passive] | add)[] | [.name, .mac, .ipv4.ip, .port] | @csv')" | xsv table
 };
 
 const counter = async () => {
-  log('> Online-Zähler <')
   const netCnt = await fb('netCnt', false); // 0.5s
   const netCntData = netCnt.split('\n').find(x => x.startsWith('const data = ')).replace('const data = ', '').replace(';', '');
   const r = JSON.parse(netCntData);
@@ -188,6 +201,7 @@ const counter = async () => {
 
 const cmd = async f => {
   if (argv[f.name]) {
+    log(`> ${f.name} <`)
     await f();
     log();
   }
