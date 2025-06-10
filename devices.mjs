@@ -3,6 +3,8 @@
 
 // fritzconnection (python) can't connect from the internet: https://github.com/kbr/fritzconnection/issues/178
 
+import { log } from 'node:console';
+import { fs, $, chalk, question } from 'zx';
 // Run with `zx --install devices.mjs` to install dependencies (included in #! above)
 import 'dotenv/config' // loads environment variables from .env
 // console.log(process.env)
@@ -118,7 +120,15 @@ const getData = (host) => async (page, json = true) => {
     "method": "POST"
   });
   console.timeEnd(page);
-  return await (json ? r.json() : r.text());
+  const data = await (json ? r.json() : r.text());
+  const ext = json ? 'json' : 'html';
+  // const dir = 'data/' + new Date().toISOString(); // UTC: 2025-06-10T13:34:36.780Z
+  const dir = 'data/' + new Date().toISOString().split('T')[0]; // keeping data once per day is enough for now
+  fs.ensureDirSync(dir);
+  const filename = `${dir}/${page}.${ext}`;
+  if (json) fs.writeJsonSync(filename, data, { spaces: 2 });
+  else fs.writeFileSync(filename, data, { spaces: 2 });
+  return data;
 };
 
 const fb = getData(host);
@@ -141,7 +151,9 @@ if (argv.add_mac) {
 // non-mutating commands
 const overview = async () => {
   console.log('> Overview <')
-  console.log((await fb('overview')).data.net.devices.map(x => `${x.name} (${x.desc})`)); // 3s
+  const r = await fb('overview');
+  // console.log(r);
+  console.log(r.data.net.devices.map(x => `${x.name} (${x.desc})`)); // 3s
   // data.dsl.{down,up}
 };
 
