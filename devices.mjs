@@ -8,7 +8,7 @@ import 'dotenv/config' // loads environment variables from .env
 // console.log(process.env)
 
 const help = () => {
-  console.log(`Usage: ./devices.mjs [OPTION]...
+  console.log(`Usage: ./devices.mjs [OPTIONS] [COMMANDS]...
 
 Login data can be given as arguments (not recommended),
 read from environment variables FBHOST, FBUSER and FBPASS,
@@ -18,10 +18,15 @@ Options:
   --host=FBHOST  FritzBox hostname including port, e.g., foobarbaz.myfritz.net:46390.
   --user=FBUSER  FritzBox username.
   --pass=FBPASS  FritzBox password.
-  --loop=SEC     Run in a loop with SEC seconds of sleep each iteration.
-  --add_mac=MAC  Add a device by its MAC address and quit.
+  --loop=SEC     Run in a loop with SEC seconds of sleep each iteration. Default is to run commands just once. Option is ignored for mutation commands like --add_mac.
   --verbose      Verbose mode (shows each command and its output; off by default).
   --help         Show this usage information.
+
+Commands:
+  --add_mac=MAC  Add a device by its MAC address and quit.
+  --overview     Overview of devices and ??.
+  --devices      Detailed list of devices.
+  --counter      Online counter / statistics.
 `);
 }
 if (argv.help) {
@@ -58,10 +63,13 @@ const ask = (query, hidden = false) => {
   }))
 }
 
+// option parsing
 const sec = parseInt(argv.loop)
 const host = argv.host || process.env.FBHOST || await question('Hostname including port: ') || process.exit(1)
 const user = argv.user || process.env.FBUSER || await question('Username: ') || process.exit(1)
 const pass = argv.pass || process.env.FBPASS || await ask('Password: ', true) || process.exit(1)
+
+console.log(new Date().toLocaleString('de'));
 
 const headers = {
   "accept": "*/*",
@@ -76,7 +84,9 @@ const headers = {
   "sec-fetch-mode": "cors",
   "sec-fetch-site": "same-origin",
 };
+
 let sid = null;
+
 const getData = (host) => async (page, json = true) => {
   // check if sid still valid and login+challenge if not
   // http://www.apfel-z.net/artikel/Fritz_Box_API_via_curl_wget/
@@ -113,6 +123,7 @@ const getData = (host) => async (page, json = true) => {
 
 const fb = getData(host);
 
+// mutating commands (can not run with --loop)
 if (argv.add_mac) {
   const mac = argv.add_mac;
   console.log('Adding device with MAC', mac);
@@ -120,23 +131,29 @@ if (argv.add_mac) {
   const res = fb(`wKey&${formData}`).data;
   if (res?.add_mac == 'ok') {
     console.log('Success!');
-    system.exit(0);
+    process.exit(0);
   } else {
     console.error('Failed!');
-    system.exit(1);
+    process.exit(1);
   }
 }
 
-while(true) {
-  console.log(new Date().toLocaleString('de'));
-  // console.log('> Devices <')
+// non-mutating commands
+const overview = async () => {
+  console.log('> Overview <')
   console.log((await fb('overview')).data.net.devices.map(x => `${x.name} (${x.desc})`)); // 3s
   // data.dsl.{down,up}
-  // console.log((await fb('netDev')).data.active.map(x => x.name)); // 5s
+};
+
+const devices = async () => {
+  console.log('> Devices <')
+  console.log((await fb('netDev')).data.active.map(x => x.name)); // 5s
   // icons: green = connected, globe = connected and using internet sending/receiving data; https://www.gutefrage.net/frage/was-bedeuten-fritzbox-icons
   // echo "$(echo 'name,mac,ipv4.ip,port'; cat netDev.json | jq -r '.data | ([.active, .passive] | add)[] | [.name, .mac, .ipv4.ip, .port] | @csv')" | xsv table
+};
 
-  // console.log('> Online-Zähler <')
+const counter = async () => {
+  console.log('> Online-Zähler <')
   const netCnt = await fb('netCnt', false); // 0.5s
   const netCntData = netCnt.split('\n').find(x => x.startsWith('const data = ')).replace('const data = ', '').replace(';', '');
   const r = JSON.parse(netCntData);
@@ -155,9 +172,23 @@ while(true) {
   }
   console.log('Today', calc(r.Today));
   // console.log('Yesterday', calc(r.Yesterday));
-  console.log();
+};
+
+const cmd = async f => {
+  if (argv[f.name]) {
+    await f();
+    console.log();
+  }
+};
+
+while(true) {
+  await cmd(overview);
+  await cmd(devices);
+  await cmd(counter);
   if (sec)
-    await sleep(sec*1000)
+    await sleep(sec*1000);
   else
-    break
+    break;
 }
+
+console.log('Done');
