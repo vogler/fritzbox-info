@@ -135,6 +135,24 @@ const getData = (host: string) => async (page: string, json = true) => {
 
 const fb = getData(host);
 
+function formatDurationAgo(ms: number): string {
+  const seconds = ms / 1000;
+  const units = [
+    { label: "d", value: 86400 },
+    { label: "h", value: 3600 },
+    { label: "m", value: 60 },
+    { label: "s", value: 1 },
+  ];
+
+  for (const unit of units) {
+    if (seconds >= unit.value) {
+      const count = Math.floor(seconds / unit.value);
+      return `${count}${unit.label} ago`;
+    }
+  }
+  return "just now";
+}
+
 // mutating commands (can not run with --loop)
 if (argv.add_mac) {
   const mac = argv.add_mac;
@@ -178,9 +196,24 @@ const overview = async () => {
 const devices = async () => {
   const r = await fb('netDev'); // 5s
   const d = r.data;
-  const devices = d.active.map(x => x.name);
+  // const devices = d.active.map(x => x.name);
   // icons: green = connected, globe = connected and using internet sending/receiving data; https://www.gutefrage.net/frage/was-bedeuten-fritzbox-icons
   // echo "$(echo 'name,mac,ipv4.ip,port'; cat netDev.json | jq -r '.data | ([.active, .passive] | add)[] | [.name, .mac, .ipv4.ip, .port] | @csv')" | xsv table
+  const max_ip = Math.max(...d.active.map(d => d.ipv4.ip.length));
+  const p = d => {
+    const ts_lastused = Number(d.ipv4.lastused) * 1000;
+    const ago = formatDurationAgo(Date.now() - ts_lastused);
+    log(chalk.gray(d.mac), d.ipv4.ip.padEnd(max_ip), chalk.blue(d.name), ago, d.properties.map(x => x.txt), d.type, chalk.yellow(d.parent.name));
+  };
+  const f = s => {
+    const sortBy = d => Number(d.ipv4.ip.split('.').at(-1));
+    const ds = d[s].sort((a, b) => sortBy(a) - sortBy(b));
+    log(s, ds.length);
+    ds.map(p);
+  };
+  f('active');
+  f('passive'); // empty by default; prob. need to pass some arg to include passive devices
+  log('countpassive', d.countpassive);
 };
 
 const counter = async () => {
