@@ -48,10 +48,10 @@ const ask = (query: string, hidden = false) => {
     input: process.stdin,
     output: process.stdout,
   })
-  if(hidden){
+  if (hidden) {
     let t = true
     rl._writeToOutput = (a) => {
-      if(t){
+      if (t) {
         rl.output.write(a)
         t = false;
       } else {
@@ -60,9 +60,9 @@ const ask = (query: string, hidden = false) => {
     }
   }
   return new Promise(resolve => rl.question(query, ans => {
-      if(hidden) rl.output.write('\n\r')
-      rl.close()
-      resolve(ans)
+    if (hidden) rl.output.write('\n\r')
+    rl.close()
+    resolve(ans)
   }))
 }
 
@@ -105,7 +105,8 @@ const getData = (host: string) => async (page: string, json = true) => {
       // console.error('Not logged in anymore! Challenge:', challenge);
       const response = (await $`echo -n "${challenge}-${pass}" | iconv --from-code=UTF-8 --to-code=UTF-16LE | md5sum | sed  -e 's/ .*//'`).toString().trim();
       // log('Response:', response);
-      const r = await (await fetch(`https://${host}/login_sid.lua`, { headers, "method": "POST",
+      const r = await (await fetch(`https://${host}/login_sid.lua`, {
+        headers, "method": "POST",
         "body": `response=${challenge}-${response}&username=${user}`,
       })).text();
       // log(r);
@@ -196,8 +197,8 @@ const counter = async () => {
     }
     const outgoing = mb(period.BytesSentHigh, period.BytesSentLow);
     const incoming = mb(period.BytesReceivedHigh, period.BytesReceivedLow);
-    const total = outgoing + incoming; 
-    return {total, outgoing, incoming};
+    const total = outgoing + incoming;
+    return { total, outgoing, incoming };
   }
   log('Today', calc(r.Today));
   // log('Yesterday', calc(r.Yesterday));
@@ -211,12 +212,12 @@ const cmd = async f => {
   }
 };
 
-while(true) {
+while (true) {
   await cmd(overview);
   await cmd(devices);
   await cmd(counter);
   if (sec)
-    await sleep(sec*1000);
+    await sleep(sec * 1000);
   else
     break;
 }
