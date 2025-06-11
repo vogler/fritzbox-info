@@ -153,7 +153,7 @@ const overview = async () => {
   const r = await fb('overview'); // 3s
   const d = r.data;
   // just includes name, state and connection, not IP or MAC
-  const devices = d.net.devices.map(x => `${x.name} (${x.desc})`);
+  const devices = d.net.devices.map(x => `${x.name} (${x.desc ?? x.type})`);
   const con = d.internet.connections.find(x => x.active);
   log({
     fritzbox: d.fritzos.Productname,
