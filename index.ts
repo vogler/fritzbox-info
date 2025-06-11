@@ -1,10 +1,11 @@
-#!/usr/bin/env -S zx --install
+#!/usr/bin/env bun .
 // Docs: https://google.github.io/zx/api
+// https://google.github.io/zx/typescript
 
 // fritzconnection (python) can't connect from the internet: https://github.com/kbr/fritzconnection/issues/178
 
 import { log } from 'node:console';
-import { fs, $, chalk, question } from 'zx';
+import { $, argv, fs, chalk, question, sleep } from 'zx';
 // Run with `zx --install devices.mjs` to install dependencies (included in #! above)
 import 'dotenv/config' // loads environment variables from .env
 // log(process.env)
@@ -41,7 +42,7 @@ $.verbose = argv.verbose;
 // Use `ask('Prompt: ', true)` instead to show * on input.
 // Adapted from https://gist.github.com/colgatto/22a2933889eda0a51645374b5bd70e3b
 // Could also use https://github.com/enquirer/enquirer now that I introduced deps for dotenv.
-const readline = require('readline')
+import readline from 'readline';
 const ask = (query, hidden = false) => {
   const rl = readline.createInterface({
     input: process.stdin,
