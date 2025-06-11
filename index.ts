@@ -43,7 +43,7 @@ $.verbose = argv.verbose;
 // Adapted from https://gist.github.com/colgatto/22a2933889eda0a51645374b5bd70e3b
 // Could also use https://github.com/enquirer/enquirer now that I introduced deps for dotenv.
 import readline from 'readline';
-const ask = (query, hidden = false) => {
+const ask = (query: string, hidden = false) => {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -88,9 +88,9 @@ const headers = {
   "sec-fetch-site": "same-origin",
 };
 
-let sid = null;
+let sid: string | undefined;
 
-const getData = (host) => async (page, json = true) => {
+const getData = (host: string) => async (page: string, json = true) => {
   // check if sid still valid and login+challenge if not
   // http://www.apfel-z.net/artikel/Fritz_Box_API_via_curl_wget/
   if (!sid) {
@@ -98,8 +98,8 @@ const getData = (host) => async (page, json = true) => {
     // console.time('login');
     const sid_get = await (await fetch(`https://${host}/login_sid.lua`, { headers, "method": "GET" })).text();
     // log(sid_get);
-    const xml_sid = t => t.match(/<SID>(.*)<\/SID>/)[1];
-    const xml_cha = t => t.match(/<Challenge>(.*)<\/Challenge>/)[1];
+    const xml_sid = (t: string) => t.match(/<SID>(.*)<\/SID>/)?.[1];
+    const xml_cha = (t: string) => t.match(/<Challenge>(.*)<\/Challenge>/)?.[1];
     if (xml_sid(sid_get) == '0000000000000000') {
       const challenge = xml_cha(sid_get);
       // console.error('Not logged in anymore! Challenge:', challenge);
@@ -138,9 +138,10 @@ const fb = getData(host);
 if (argv.add_mac) {
   const mac = argv.add_mac;
   log('Adding device with MAC', mac);
-  const formData = mac.split(':').map((i,v) => `mac${i}=${v}`).join('&') + `&mac=${encodeURIComponent(mac)}`;
-  const res = fb(`wKey&${formData}`).data;
-  if (res?.add_mac == 'ok') {
+  const formData = mac.split(':').map((i: number, v: string) => `mac${i}=${v}`).join('&') + `&mac=${encodeURIComponent(mac)}`;
+  const r = await fb(`wKey&${formData}`);
+  const d = r.data;
+  if (d.add_mac == 'ok') {
     log('Success!');
     process.exit(0);
   } else {
@@ -174,7 +175,9 @@ const overview = async () => {
 };
 
 const devices = async () => {
-  log((await fb('netDev')).data.active.map(x => x.name)); // 5s
+  const r = await fb('netDev'); // 5s
+  const d = r.data;
+  const devices = d.active.map(x => x.name);
   // icons: green = connected, globe = connected and using internet sending/receiving data; https://www.gutefrage.net/frage/was-bedeuten-fritzbox-icons
   // echo "$(echo 'name,mac,ipv4.ip,port'; cat netDev.json | jq -r '.data | ([.active, .passive] | add)[] | [.name, .mac, .ipv4.ip, .port] | @csv')" | xsv table
 };
