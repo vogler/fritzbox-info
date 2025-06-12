@@ -209,7 +209,9 @@ const devices = async () => {
     const sortBy = d => Number(d.ipv4.ip.split('.').at(-1));
     const ds = d[s].sort((a, b) => sortBy(a) - sortBy(b));
     log(s, ds.length);
+    if (ds.length) log('Indirectly connected devices:', ds.filter(d => d.parent.name).length);
     ds.map(p);
+    if (ds.length) log();
   };
   f('active');
   f('passive'); // empty by default; prob. need to pass some arg to include passive devices
@@ -254,5 +256,3 @@ while (true) {
   else
     break;
 }
-
-log('Done');
