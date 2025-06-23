@@ -8,6 +8,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@inquirer/prompts": "^7.5.3",
     "dotenv": "^16.5.0",
     "zx": "^8.5.5"
   }

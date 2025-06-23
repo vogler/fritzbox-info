@@ -6,7 +6,7 @@
 
 import { log } from 'node:console';
 import { $, argv, fs, chalk, question, sleep } from 'zx';
-// Run with `zx --install devices.mjs` to install dependencies (included in #! above)
+import { password } from '@inquirer/prompts'; // since zx has no prompt to hide password...
 import 'dotenv/config' // loads environment variables from .env
 // log(process.env)
 
@@ -38,39 +38,11 @@ if (argv.help) {
 }
 $.verbose = argv.verbose;
 
-// zx has `question` for prompts, but there's no option to hide passwords.
-// Use `ask('Prompt: ', true)` instead to show * on input.
-// Adapted from https://gist.github.com/colgatto/22a2933889eda0a51645374b5bd70e3b
-// Could also use https://github.com/enquirer/enquirer now that I introduced deps for dotenv.
-import readline from 'readline';
-const ask = (query: string, hidden = false) => {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  })
-  if (hidden) {
-    let t = true
-    rl._writeToOutput = (a) => {
-      if (t) {
-        rl.output.write(a)
-        t = false;
-      } else {
-        rl.output.write('*')
-      }
-    }
-  }
-  return new Promise(resolve => rl.question(query, ans => {
-    if (hidden) rl.output.write('\n\r')
-    rl.close()
-    resolve(ans)
-  }))
-}
-
 // option parsing
 const sec = parseInt(argv.loop)
 const host = argv.host || process.env.FBHOST || await question('Hostname including port: ') || process.exit(1)
 const user = argv.user || process.env.FBUSER || await question('Username: ') || process.exit(1)
-const pass = argv.pass || process.env.FBPASS || await ask('Password: ', true) || process.exit(1)
+const pass = argv.pass || process.env.FBPASS || await password({ message: 'Password:', mask: true }) || process.exit(1)
 
 log(new Date().toLocaleString('de'));
 
